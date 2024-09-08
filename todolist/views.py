@@ -11,12 +11,20 @@ from rest_framework.permissions import IsAuthenticated
 class TodoItemView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-
+ # GET request to fetch todos assigned to the authenticated user
     def get(self, request, format=None):
         todos = TodoItem.objects.filter(author=request.user)
         serializer = TodoItemSerializer(todos, many=True)
         return Response(serializer.data)
-    
+  # POST request to create & save new todos assigned to the authenticated user
+    def post(self, request, format=None):
+        data = request.data
+        data['author'] = request.user.id  
+        serializer = TodoItemSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()  
+        return Response(serializer.data)
+
     
 class LoginView(ObtainAuthToken):
    def post(self, request, *args, **kwargs):
