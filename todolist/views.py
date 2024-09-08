@@ -1,3 +1,5 @@
+from rest_framework import status
+from django.http import Http404
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken, APIView
@@ -24,6 +26,17 @@ class TodoItemView(APIView):
         if serializer.is_valid():
             serializer.save()  
         return Response(serializer.data)
+    # DELETE request to delete a todos assigned to the authenticated user
+    def delete(self, request, format=None):
+        data = request.data
+        try:
+            todo_id = data.get('id')
+            todo = TodoItem.objects.get(pk=todo_id, author=request.user)
+        except TodoItem.DoesNotExist:
+            raise Http404
+
+        todo.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     
 class LoginView(ObtainAuthToken):
