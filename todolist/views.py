@@ -1,3 +1,4 @@
+from django.forms import ValidationError
 from rest_framework import status
 from django.http import Http404
 from django.shortcuts import render
@@ -37,7 +38,26 @@ class TodoItemView(APIView):
 
         todo.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+        # PATCH: To-Do-Item aktualisieren
+    def patch(self, request, format=None):
+        data = request.data
+        todo_id = data.get('id')
+        new_title = data.get('title')
 
+        if not todo_id or not new_title:
+            raise ValidationError({"detail": "Both 'id' and 'title' must be provided in the request body."})
+
+        try:
+            todo = TodoItem.objects.get(pk=todo_id, author=request.user)
+        except TodoItem.DoesNotExist:
+            raise Http404
+
+        # Update the To-Do item with the new title
+        serializer = TodoItemSerializer(todo, data={'title': new_title}, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class LoginView(ObtainAuthToken):
    def post(self, request, *args, **kwargs):
